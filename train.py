@@ -15,10 +15,10 @@ tf.flags.DEFINE_integer("max_seq_len", 50,
                         "Maximum sequence length")
 tf.flags.DEFINE_integer("num_units", 128,
                         "size of hidden states")
-tf.flags.DEFINE_integer("num_layers", 1,
+tf.flags.DEFINE_integer("num_layers", 5,
                         "size of hidden layers")
-tf.flags.DEFINE_float("dropout_keep_prob", 0.5,
-                      "Dropout keep probability (default: 0.5)")
+tf.flags.DEFINE_float("dropout_keep_prob", 0.8,
+                      "Dropout keep probability (default: 0.8)")
 tf.flags.DEFINE_float("l2_reg_lambda", 0.0,
                       "L2 regularizaion lambda (default: 0.0)")
 tf.flags.DEFINE_float("validation_ratio", 0.01,
@@ -44,8 +44,8 @@ tf.flags.DEFINE_integer("num_epochs", 300,
 tf.flags.DEFINE_integer(
         "evaluation_step", 50,
         "Evaluate model on dev set after this many steps (default: 50)")
-tf.flags.DEFINE_integer("checkpoint_step", 100,
-                        "Save model after this many steps (default: 1000)")
+tf.flags.DEFINE_integer("checkpoint_step", 500,
+                        "Save model after this many steps (default: 500)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True,
                         "Allow device soft device placement")
@@ -79,7 +79,8 @@ if __name__ == "__main__":
                                                FLAGS.num_layers,
                                                FLAGS.max_seq_len,
                                                FLAGS.max_gradient_norm,
-                                               FLAGS.learning_rate)
+                                               FLAGS.learning_rate,
+                                               FLAGS.dropout_keep_prob)
 
     if not os.path.exists(FLAGS.model_path):
         os.mkdir(FLAGS.model_path)

@@ -12,7 +12,7 @@ from tensorflow.contrib import rnn
 class Seq2SeqAutoEncoder(object):
     def __init__(self, vocab_size, embedding_size, num_units,
                  num_layers, max_seq_len, max_gradient_norm,
-                 learning_rate):
+                 learning_rate, dropout_keep_prob):
         self.vocab_size = vocab_size
         self.embedding_size = embedding_size
         self.num_units = num_units
@@ -20,6 +20,7 @@ class Seq2SeqAutoEncoder(object):
         self.max_seq_len = max_seq_len
         self.max_gradient_norm = max_gradient_norm
         self.learning_rate = learning_rate
+        self.dropout_keep_prob = dropout_keep_prob
 
         self.global_step = tf.Variable(0, trainable=False)
         self.encoder_inputs = tf.placeholder(tf.int32,
@@ -30,6 +31,7 @@ class Seq2SeqAutoEncoder(object):
         self.decoder_weights = tf.placeholder(tf.float32,
                                               [None, self.max_seq_len + 2])
         self.feed_previous = tf.placeholder(tf.bool)
+        self.dropout = tf.placeholder(tf.float32)
 
         with tf.device("/cpu:0"), tf.name_scope("embedding"):
             embedding = tf.get_variable("embedding",
@@ -44,7 +46,13 @@ class Seq2SeqAutoEncoder(object):
                     tf.nn.embedding_lookup(embedding, self.decoder_inputs),
                     [1, 0, 2]))
 
+        # cell = tf.contrib.rnn.GRUCell(self.num_units)
         cell = tf.contrib.rnn.BasicLSTMCell(self.num_units)
+        cell = tf.contrib.rnn.DropoutWrapper(cell,
+                                             output_keep_prob=self.dropout)
+
+        if self.num_layers > 1:
+            cell = tf.contrib.rnn.MultiRNNCell([cell] * self.num_layers)
 
         with tf.variable_scope("encoder"):
             encoder_outputs, self.encoder_state = rnn.static_rnn(
@@ -160,11 +168,13 @@ class Seq2SeqAutoEncoder(object):
 
         if is_train:
             feed_dict[self.feed_previous] = False
+            feed_dict[self.dropout] = self.dropout_keep_prob
             encoder_state, decoder_symbols, summary, loss, _ = sess.run([
                 self.encoder_state, self.decoder_symbols, self.summary_op,
                 self.loss, self.update], feed_dict=feed_dict)
         else:
             feed_dict[self.feed_previous] = True
+            feed_dict[self.dropout] = 1.0
             encoder_state, decoder_symbols, summary, loss = sess.run([
                 self.encoder_state, self.decoder_symbols,
                 self.summary_op, self.loss],
